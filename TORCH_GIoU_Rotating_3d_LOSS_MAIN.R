@@ -24,7 +24,7 @@ library(torch)
 device <- if (cuda_is_available()) torch_device("cuda:0") else "cpu"
 
 DATA_DIR = "D:/PYTHON_CODE/Rotated_IoU-master/data"
-SOURCE_DIR = "D:/Y_Drive/CNN/R_Code/TORCH_ITCD_EXTRAP_V22/PYTORCH_TRANSLATIONS/TORCH_GIoU_Rotating_3d_LOSS"
+SOURCE_DIR = "D:/Y_Drive/CNN/R_Code/TORCH_ITCD_EXTRAP_V22/PYTORCH_TRANSLATIONS/Torch_R_GIoU_3dRotated_BBox_Loss"
 
 
 # MODEL PARAMETRES

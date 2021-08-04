@@ -14,12 +14,6 @@ enclosing_box <- function(corners1, corners2, enclosing_type ="smallest"){
 }
 
 
-
-
-
-
-
-
 #################################################################################################################################
 # box_intersection_2d.py
 box1_in_box2 <- function(corners1, corners2){

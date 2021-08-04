@@ -181,14 +181,14 @@ smallest_bounding_box <- function(corners, verbose=FALSE){
   area_cl <- torch_clone(area)    # IN-PLACE OPERATION FIX
   area_cl <- area_cl$add(fake)       # $add_(fake) add large value to zero_mask
   area_min_out <- torch_min(area_cl, dim=-1, keepdim=TRUE)     # (..., 1)
-  area_min <- area_min_out[[1]]
+  area_min <- area_min_out[[1]]$squeeze(-1)$to(dtype = torch_float())
   idx  <- area_min_out[[2]]
-  
-  w = torch_gather(proj, dim=-1, index=idx)
-  h = torch_gather(dist, dim=-1, index=idx)          # (..., 1)
-  w = w$squeeze(-1)$to(dtype = torch_float())
-  h = h$squeeze(-1)$to(dtype = torch_float())
-  area_min = area_min$squeeze(-1)$to(dtype = torch_float())
+
+  w = torch_gather(proj, dim=-1, index=idx)$squeeze(-1)$to(dtype = torch_float())
+  h = torch_gather(dist, dim=-1, index=idx)$squeeze(-1)$to(dtype = torch_float())          # (..., 1)
+  # w = w$squeeze(-1)$to(dtype = torch_float())
+  # h = h$squeeze(-1)$to(dtype = torch_float())
+  # area_min = area_min$squeeze(-1)$to(dtype = torch_float())
   if(verbose == TRUE){
     return (list(w, h, area_min, idx$squeeze(-1)))
   }
