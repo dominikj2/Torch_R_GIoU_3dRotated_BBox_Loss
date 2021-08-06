@@ -18,13 +18,13 @@ sort_indices <- function(vertices, mask){
   #       and X indicates the index of arbitary elements in the last 16 (intersections not corners) with 
   #       value 0 and mask False. (cause they have zero value and zero gradient)
   #   """
-  
+
   num_valid = torch_sum(mask$to(dtype = torch_int()), dim=3)$to(dtype = torch_int())    # (B, N)
   mean = (torch_sum(vertices * mask$to(dtype = torch_float())$unsqueeze(-1), dim=3, keepdim=TRUE) / num_valid$unsqueeze(-1)$unsqueeze(-1))
   vertices_normalized = (vertices - mean)      # normalization makes sorting easier
   # browser()
   sorted_vertices <-contrib_sort_vertices(vertices_normalized, mask, num_valid)$to(dtype = torch_long())
-  
+
   # sorted_vertices <- contrib_sort_vertices(vertices_normalized1, mask1, num_valid1)$to(dtype = torch_long())
   return (sorted_vertices)
 }
@@ -94,6 +94,7 @@ box_intersection_th <- function(corners1, corners2){
   #       mask (torch.Tensor) : B, N, 4, 4; bool
   #   """
   # build edges from corners
+  #browser()
   line1 = torch_cat(c(corners1, corners1[, , c(2, 3, 4, 1),]), dim=4) # B, N, 4, 4: Batch, Box, edge, point
   line2 = torch_cat(c(corners2, corners2[, , c(2, 3, 4, 1),]), dim=4)
   # duplicate data to pair each edges from the boxes
@@ -151,14 +152,27 @@ calculate_area <- function(idx_sorted, vertices){
   #       area: (B, N), area of intersection
   #       selected: (B, N, 9, 2), vertices of polygon with zero padding 
   #   """
-  # browser()
+  
+
+ 
   idx_ext = idx_sorted$unsqueeze(-1)$'repeat'(c(1,1,1,2))
+ 
+  # ERROR CATCHING
+  print(idx_ext$min())
+  print(idx_ext$max())
+  print(dim(vertices))
+  print(dim(idx_ext))
+  # print(min(as.vector(as.array(idx_ext$to(device= "cpu")))))
+  # print(max(as.vector(as.array(idx_ext$to(device= "cpu")))))
+  browser()
+  if(min(as.vector(as.array(idx_ext$to(device= "cpu")))) == 0){browser()}
   selected = torch_gather(vertices, 2, idx_ext)
+  browser()
   D_s <- dim(selected)
   total = selected[, , 1:(D_s[3]-1), 1]*selected[, , 2:D_s[3], 2] - selected[, , 1:(D_s[3]-1), 2]*selected[, , 2:D_s[3], 1] # head( 1:4, -1)
+
   total = torch_sum(total, dim=3)
   area = torch_abs(total) / 2
-  # browser()
   return(list(area, selected))
 }
 
@@ -176,22 +190,26 @@ oriented_box_intersection_2d <- function(corners1, corners2){
   #       area: (B, N), area of intersection
   #       selected: (B, N, 9, 2), vertices of polygon with zero padding 
   #   """
-  #browser()
+
   box_intersection_th_out <- box_intersection_th(corners1, corners2)
+
   inters <- box_intersection_th_out[[1]]
   mask_inter <- box_intersection_th_out[[2]]
   box_in_box_th_out = box_in_box_th(corners1, corners2)
   c12 <- box_in_box_th_out[[1]]
   c21 <- box_in_box_th_out[[2]]
-  
+
   # vertices, mask = build_vertices(corners1, corners2, c12, c21, inters, mask_inter)
   build_vertices_out <- build_vertices(corners1, corners2, c12, c21, inters, mask_inter)
   vertices <- build_vertices_out[[1]]
   mask <- build_vertices_out[[2]]
-  #browser()
+
   sorted_indices = sort_indices(vertices, mask)
-  Output <- calculate_area(sorted_indices, vertices)
   #browser()
+  # if(as.array(sorted_indices$min()$to(device="cpu")) == 0){browser()}
+  sorted_indices = sorted_indices + 1L # WORK AROUND
+  Output <- calculate_area(sorted_indices, vertices)
+
   return(Output)
 }
 

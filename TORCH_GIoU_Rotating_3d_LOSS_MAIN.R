@@ -98,8 +98,9 @@ Main <- function(Loss_Type = "giou", Enclosing_Type="aligned"){
     net$train()
     ld_train$.length()
 
+    Count_Corro <- 0
     coro::loop(for (b in ld_train) {   # for i, data in enumerate(ld_train, 1):
-      # 
+
       #data <- train_batch(i) # ??
       print("enumerate loop")
       # browser()
@@ -124,6 +125,8 @@ Main <- function(Loss_Type = "giou", Enclosing_Type="aligned"){
         iou_loss <- Output_IoU[[1]] 
         iou <- Output_IoU[[2]]
       }
+      Count_Corro <- Count_Corro + 1 
+      print(paste("Count_Corro", Count_Corro))
 
       # if(Loss_Type == "diou"){
       #    Output_IoU = cal_diou(pred, label, enclosing_type)
@@ -135,7 +138,7 @@ Main <- function(Loss_Type = "giou", Enclosing_Type="aligned"){
       print(paste("LOSS pre Backward:", as.array(iou_loss$to(device = "cpu"))))
       # iou_loss$register_hook(e_hook)
 
-
+      
       #with_detect_anomaly({
       iou_loss$backward()
       #})

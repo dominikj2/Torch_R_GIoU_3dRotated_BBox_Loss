@@ -58,7 +58,7 @@ box2corners_th <- function(box){
   #   Returns:
   #       torch.Tensor: (B, N, 4, 2) corners
   #   """
-  
+  # browser()
   B = box$size(1)
   x = box[, , 1]$unsqueeze(3)
   y = box[, , 2]$unsqueeze(3)
@@ -114,10 +114,10 @@ cal_iou <- function(box1, box2){
   #       corners1 (torch.Tensor): (B, N, 4, 2)
   #       U (torch.Tensor): (B, N) area1 + area2 - inter_area
   #   """
-  # browser()
+  
   corners1 = box2corners_th(box1)
   corners2 = box2corners_th(box2)
-  
+
   inter_area = oriented_box_intersection_2d(corners1, corners2)        #(B, N)
   # browser()
   area1 = box1[, , 3] * box1[, , 4]
@@ -159,7 +159,7 @@ cal_diou <- function(box1, box2, enclosing_type="smallest"){
 #################################################################################################################################
 # oriented_iou_loss.py  
 cal_giou <- function(box1, box2, enclosing_type){
-  #browser()
+  # browser()
   cal_iou_out  = cal_iou(box1, box2)
   iou <- cal_iou_out[[1]]
   corners1 <- cal_iou_out[[2]] 
