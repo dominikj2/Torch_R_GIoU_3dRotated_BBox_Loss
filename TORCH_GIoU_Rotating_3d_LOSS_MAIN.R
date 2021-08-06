@@ -15,17 +15,27 @@
 
 #################################################################################################################################
 
+
+# Error in (function (tensors, dim)  : 
+#             CUDA error: device-side assert triggered
+#           CUDA kernel errors might be asynchronously reported at some other API call,so the stacktrace below might be incorrect.
+#           For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+          
 rm(list=ls())
 options(digits = 12)
 options(warn=1, error = NULL) # options(warn=2, error=recover)
 
+Sys.setenv(CUDA_LAUNCH_BLOCKING=1)
+
 library(torch)
 
-device <- if (cuda_is_available()) torch_device("cuda:0") else "cpu"
+device <- if (cuda_is_available()) torch_device("cuda:0") else "cpu" #  
 
 DATA_DIR = "D:/PYTHON_CODE/Rotated_IoU-master/data"
 SOURCE_DIR = "D:/Y_Drive/CNN/R_Code/TORCH_ITCD_EXTRAP_V22/PYTORCH_TRANSLATIONS/Torch_R_GIoU_3dRotated_BBox_Loss"
 
+
+# Sys.setenv(CUDA_LAUNCH_BLOCKING=1)
 
 # MODEL PARAMETRES
 X_MAX = 3
@@ -38,6 +48,28 @@ NUM_TEST = 5 * BATCH_SIZE * N_DATA
 NUM_EPOCH = 20
 EPSILON = 1e-8
 
+#################################################################################################################################
+# # HOOK FUNCTIONS
+e_hook <- function(grad){
+  print("e_hook")
+  # browser()
+  #print(paste("iou_loss", as.character(as.array(grad$to(device = "cpu")))))
+  return(grad)
+}
+# 
+# max_hook1<- function(grad){
+#   print("maxHook1")
+#   #browser()
+#   #print(paste("ar", as.character(as.array(grad$to(device = "cpu")))))
+#   return(grad)
+# }
+# 
+# max_hook2<- function(grad){
+#   print("maxHook2")
+#   #browser()
+#   #print(paste("ar", as.character(as.array(grad$to(device = "cpu")))))
+#   return(grad)
+# }
 #################################################################################################################################
 # SOURCE CODE
 source(paste(SOURCE_DIR, "/TORCH_GIoU_BOX_INTERSECT.R", sep=""))
@@ -62,13 +94,15 @@ Main <- function(Loss_Type = "giou", Enclosing_Type="aligned"){
   num_batch = length(ds_train)/(BATCH_SIZE*N_DATA)
  
   for (epoch in 1:(NUM_EPOCH+1)){
+    print("epoch loop")
     net$train()
     ld_train$.length()
 
     coro::loop(for (b in ld_train) {   # for i, data in enumerate(ld_train, 1):
-      # browser()
+      # 
       #data <- train_batch(i) # ??
-      
+      print("enumerate loop")
+      # browser()
       box <- b[[1]]$to(device=device)
       box <- box$view(c(BATCH_SIZE, -1, 4*2)) %>% torch_transpose(2, 3)  # 4  8 16  (B, 8, N)
       
@@ -83,7 +117,7 @@ Main <- function(Loss_Type = "giou", Enclosing_Type="aligned"){
       pred = parse_pred(pred)
       iou_loss <- NA
       iou <- NA
-      # browser()
+
       if(Loss_Type == "giou"){
         #browser()
         Output_IoU = cal_giou(pred, label, enclosing_type)
@@ -91,29 +125,35 @@ Main <- function(Loss_Type = "giou", Enclosing_Type="aligned"){
         iou <- Output_IoU[[2]]
       }
 
-      if(Loss_Type == "diou"){
-         Output_IoU = cal_diou(pred, label, enclosing_type)
-         iou_loss <- Output_IoU[[1]] 
-         iou <- Output_IoU[[2]]
-      }
-      browser()
-      iou_loss <- torch_mean(iou_loss) # $unsqueeze(1)
-      with_detect_anomaly({
-        iou_loss$backward()
-      })
-      browser()
-      
+      # if(Loss_Type == "diou"){
+      #    Output_IoU = cal_diou(pred, label, enclosing_type)
+      #    iou_loss <- Output_IoU[[1]] 
+      #    iou <- Output_IoU[[2]]
+      # }
+
+      iou_loss <- torch_mean(iou_loss)  #iou_loss = torch.mean(iou_loss)
+      print(paste("LOSS pre Backward:", as.array(iou_loss$to(device = "cpu"))))
+      # iou_loss$register_hook(e_hook)
+
+
+      #with_detect_anomaly({
+      iou_loss$backward()
+      #})
+     
       #iou_loss$backward()
       optimizer$step()
-
-      if (i%%10 == 0){
-        browser()
-        #iou_mask = (iou > 0).float()
+      
+      
+      if (epoch%%1 == 0){
+       
+        iou_mask = (iou > 0)$to(dtype = torch_float())
         mean_iou = torch_sum(iou) / (torch_sum(iou_mask) + 1e-8)
-        cat(sprintf("\nEpoch %d, TRAIN: loss:%3f, loss_VOX_IoU: %4f, mean_iou: %4f\n",
-                    epoch, i, num_batch, as.array(iou_los), as.array(mean_iou)))
+        cat(sprintf("\nEpoch %d, Batch:%d, loss:%3f,  mean_iou: %4f\n",
+                    epoch, num_batch, as.array(iou_loss$to(device = "cpu")), as.array(mean_iou$to(device = "cpu"))))
         }
+      
       })
+    browser()
     lr_scheduler$step()
     
 
@@ -143,8 +183,7 @@ Main <- function(Loss_Type = "giou", Enclosing_Type="aligned"){
         
         if(Loss_Type == "giou"){
           Output_IoU = cal_giou(pred, label, enclosing_type)
-          iou_loss <- Output_IoU[[1]] 
-          iou <- Output_IoU[[2]]
+
         }
         
         if(Loss_Type == "diou"){
@@ -159,10 +198,11 @@ Main <- function(Loss_Type = "giou", Enclosing_Type="aligned"){
         
         if (i%%10 == 0){
           browser()
-          #iou_mask = (iou > 0).float()
+    
+          iou_mask = (iou > 0)$to(dtype = torch_float())
           mean_iou = torch_sum(iou) / (torch_sum(iou_mask) + 1e-8)
           cat(sprintf("\nEpoch %d, TRAIN: loss:%3f, loss_VOX_IoU: %4f, mean_iou: %4f\n",
-                      epoch, i, num_batch, as.array(iou_los), as.array(mean_iou)))
+                      epoch, i, num_batch, as.array(iou_loss), as.array(mean_iou)))
           aver_mean_iou <- aver_mean_iou +  as.array(mean_iou)
           cat(sprintf("... validate epoch %d ...", epoch))
           n_iter = (length(ds_test)/BATCH_SIZE)/N_DATA

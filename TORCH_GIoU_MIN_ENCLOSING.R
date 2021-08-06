@@ -61,6 +61,7 @@ gather_lines_points <- function(corners){
   idx_lines = idx_lines$'repeat'(c(1,1,2))                                  # (24, 2, 2)
   idx_points = idx_points$'repeat'(c(1,1,2))                                   # (24, 6, 2)
   if (dim_lngth > 2){
+    # browser()
     for (i in 1:(dim_lngth-2)){
       idx_lines = torch_unsqueeze(idx_lines, 1)
       idx_points = torch_unsqueeze(idx_points, 1)
@@ -97,20 +98,38 @@ point_line_distance_range <- function(lines, points){
   y2 = lines[.., 2, 2] $unsqueeze(-1)      # (..., 24, 1)
   x = points[.., 1]            # (..., 24, 6)
   y = points[.., 2]            # (..., 24, 6)
-  den = (y2-y1)*x - (x2-x1)*y + x2*y1 - y2*x1
-  # NOTE: the backward pass of torch.sqrt(x) generates NaN if x==0
-  num = torch_sqrt( (y2-y1)$square() + (x2-x1)$square() + 1e-14 )
-  d = den/num         # (..., 24, 6)
-  # browser()
   
-  # SEEMS TO BE AN ERROR HERE
+  den = (y2-y1)*x - (x2-x1)*y + x2*y1 - y2*x1
+  # den$register_hook(max_hook1)
+  
+  # NOTE: the backward pass of torch.sqrt(x) generates NaN if x==0
+  
+  num = torch_sqrt( (y2-y1)$square() + (x2-x1)$square() + 1e-14 )
+  # num$register_hook(max_hook1)
+  
+  d = den/num         # (..., 24, 6)
+  #d$register_hook(max_hook1)
+
   d_max = d$max(dim=-1)[[1]] # torch_max(d, dim =-1)[[1]]       # (..., 24)
+  #d_max$register_hook(max_hook1)
+
   d_min = d$min(dim=-1)[[1]]  # torch_min(d, dim=-1)[[1]]      # (..., 24)
+  #d_min$register_hook(max_hook1)
+  
   d1 = d_max - d_min  
+  #d1$register_hook(max_hook1)
+  
   # suppose points on different side
-  d2 = torch_max(d$abs(), dim=-1)[[1]]      # or, all points are on the same side
+  d_abs = d$abs()
+  #d_abs$register_hook(max_hook1)
+  
+  # d2 = torch_max(d_abs, dim=-1)[[1]]      # or, all points are on the same side
+  d2 = d_abs$max(dim=-1)[[1]]
+  #d2$register_hook(max_hook1)
+
   output = torch_max(d1, other = d2)
-  # browser()
+  #output$register_hook(max_hook1)
+
   # NOTE: if x1 = x2 and y1 = y2, this will return 0
   return (output)
 }
@@ -140,10 +159,16 @@ point_line_projection_range <- function(lines, points){
   points_ext = torch_cat(c(lines, points), dim=-2)         # (..., 24, 8), consider all 8 points
   den = torch_sum(points_ext * vec, dim=-1)               # (..., 24, 8) 
   proj = den / torch_norm(vec, dim=-1, keepdim=FALSE)     # (..., 24, 8)
+
   proj_max = proj$max(dim=-1)[[1]]  #torch_max(proj, dim =-1)[[1]]       # (..., 24)
+  #proj_max$register_hook(max_hook2)
+
   proj_min = proj$min(dim=-1)[[1]]  #torch_min(proj, dim =-1)[[1]]      # (..., 24)
+  #proj_min$register_hook(max_hook2)
+  
   Output <- proj_max - proj_min
-  # browser()
+  #Output$register_hook(max_hook2)
+
   return (Output) #
 }
 
@@ -171,7 +196,7 @@ smallest_bounding_box <- function(corners, verbose=FALSE){
   # browser()
   proj = point_line_projection_range(lines, points)   # (..., 24)
   dist = point_line_distance_range(lines, points)     # (..., 24)
-  # browser()
+
   area = proj * dist
   
   # remove area with 0 when the two points of the line have the same coordinates

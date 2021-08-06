@@ -80,17 +80,21 @@ box2corners_th <- function(box){
   rotated = rotated$view(c(B,-1,4,2))          # (B*N, 4, 2) -> (B, N, 4, 2)
   
   # THERE MAY BE A POTENTIAL PROBLEM HERE
+  
+  rotated[.., 1]$add_(x)
+  rotated[.., 2]$add_(y)
+  
   # rotated[.., 1] <- rotated[.., 1]$add_(x)
   # rotated[,,, 2] <- rotated[,,, 2]$add_(y) 
-  #browser()
-  rotated_Cl = torch_clone(rotated)
-  rotated_Cl[.., 1] <- rotated_Cl[.., 1]$add(x) #$add_(x)
-  rotated_Cll = torch_clone(rotated_Cl)
-  rotated_Cll[,,, 2] <- rotated_Cll[,,, 2]$add(y) #$add_(x)
+  
+  # rotated_Cl = torch_clone(rotated)
+  # rotated_Cl[.., 1] <- rotated_Cl[.., 1]$add(x) #$add_(x)
+  # rotated_Cll = torch_clone(rotated_Cl)
+  # rotated_Cll[,,, 2] <- rotated_Cll[,,, 2]$add(y) #$add_(x)
   
   # rotated[.., 1] <- rotated[.., 1] + x # $add_(x)
   # rotated[,,, 2] <- rotated[,,, 2] + y #  $add_(y) 
-  return (rotated_Cll)
+  return (rotated)
 }
 
 
@@ -143,7 +147,7 @@ cal_diou <- function(box1, box2, enclosing_type="smallest"){
   
   w = enclosing_box_out[[1]]
   h = enclosing_box_out[[2]]
-  browser()
+
   c2 = w*w + h*h      # (B, N)
   x_offset = box1[,,0] - box2[,, 0]
   y_offset = box1[,,1] - box2[,, 1]
@@ -164,8 +168,11 @@ cal_giou <- function(box1, box2, enclosing_type){
   enclosing_box_out = enclosing_box(corners1, corners2, enclosing_type= "smallest")
   w <-  enclosing_box_out[[1]]
   h <-  enclosing_box_out[[2]]
+  
   area_c =  w*h
+  area_c$register_hook(e_hook)
   giou_loss = 1. - iou + ( area_c - u )/area_c
+  giou_loss$register_hook(e_hook)
   # browser()
   return (list(giou_loss, iou) )
 }

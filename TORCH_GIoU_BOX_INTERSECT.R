@@ -117,25 +117,27 @@ box_intersection_th <- function(corners1, corners2){
   # THERE MAY BE A POTENTIAL PROBLEM HERE
   
   t = den_t / num
-  # t[num == .0] = -1.
-  tt<- torch_where(num == 0.0, t, torch_tensor(-1.0, device=device)$to(dtype = torch_float()))
+  t[num == .0] = -1.
+  # tt<- torch_where(num == 0.0, t, torch_tensor(-1.0, device=device)$to(dtype = torch_float()))
   #browser()
-  mask_t = (tt > 0) * (tt < 1)                # intersection on line segment 1
+  mask_t = (t > 0) * (t < 1)                # intersection on line segment 1
   den_u = (x1-x2)*(y1-y3) - (y1-y2)*(x1-x3)
   u = -den_u / num
   #browser()
-  #u[num == .0] = -1.
-  uu <- torch_where(num == 0.0, u, torch_tensor(-1.0, device=device)$to(dtype = torch_float()))
-  mask_u = (uu > 0) * (uu < 1)                # intersection on line segment 2
+  u[num == .0] = -1.
+  #uu <- torch_where(num == 0.0, u, torch_tensor(-1.0, device=device)$to(dtype = torch_float()))
+  mask_u = (u > 0) * (u < 1)                # intersection on line segment 2
   mask = mask_t * mask_u 
-  ttt = den_t / (num + EPSILON)                 # overwrite with EPSILON. otherwise numerically unstable
-  intersections = torch_stack(c(x1 + ttt*(x2-x1), y1 + ttt*(y2-y1)), dim=-1)
-  intersections2 = intersections * mask$to(dtype = torch_float())$unsqueeze(-1)
-  return(list(intersections2, mask))
+  t = den_t / (num + EPSILON)                 # overwrite with EPSILON. otherwise numerically unstable
+  intersections = torch_stack(c(x1 + t*(x2-x1), y1 + t*(y2-y1)), dim=-1)
+  intersections = intersections * mask$to(dtype = torch_float())$unsqueeze(-1)
+  return(list(intersections, mask))
 }
 
 
-
+# FF = torch_rand(2,2, requires_grad=FALSE)
+# FF[1,1] = 0
+# FF[FF == .0] = -1.
 #################################################################################################################################
 # box_intersection_2d.py
 calculate_area <- function(idx_sorted, vertices){
