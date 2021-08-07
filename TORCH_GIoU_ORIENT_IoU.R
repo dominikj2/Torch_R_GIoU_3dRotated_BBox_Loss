@@ -170,9 +170,9 @@ cal_giou <- function(box1, box2, enclosing_type){
   h <-  enclosing_box_out[[2]]
   
   area_c =  w*h
-  area_c$register_hook(e_hook)
+  # area_c$register_hook(e_hook)
   giou_loss = 1. - iou + ( area_c - u )/area_c
-  giou_loss$register_hook(e_hook)
+  # giou_loss$register_hook(e_hook)
   # browser()
   return (list(giou_loss, iou) )
 }

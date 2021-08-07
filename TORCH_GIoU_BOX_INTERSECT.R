@@ -158,16 +158,24 @@ calculate_area <- function(idx_sorted, vertices){
   idx_ext = idx_sorted$unsqueeze(-1)$'repeat'(c(1,1,1,2))
  
   # ERROR CATCHING
-  print(idx_ext$min())
-  print(idx_ext$max())
-  print(dim(vertices))
-  print(dim(idx_ext))
+  # print(idx_ext$min())
+  # print(idx_ext$max())
+  # print(dim(vertices))
+  # print(dim(idx_ext))
   # print(min(as.vector(as.array(idx_ext$to(device= "cpu")))))
   # print(max(as.vector(as.array(idx_ext$to(device= "cpu")))))
-  browser()
+  #browser()
   if(min(as.vector(as.array(idx_ext$to(device= "cpu")))) == 0){browser()}
-  selected = torch_gather(vertices, 2, idx_ext)
-  browser()
+  # browser()
+  selected = torch_gather(vertices, 3, idx_ext)
+  
+  
+  # t = torch_tensor(matrix(c(1,2,3,4,5,6,7,8), ncol = 2, byrow = TRUE))
+  # TT <- torch_tensor(matrix(c(1,1,2,1,2,2,1,1), ncol = 2, byrow=TRUE), dtype = torch_int64())
+  # TTT <- torch_gather(t, 2, TT)
+  
+  
+  
   D_s <- dim(selected)
   total = selected[, , 1:(D_s[3]-1), 1]*selected[, , 2:D_s[3], 2] - selected[, , 1:(D_s[3]-1), 2]*selected[, , 2:D_s[3], 1] # head( 1:4, -1)
 
@@ -207,6 +215,7 @@ oriented_box_intersection_2d <- function(corners1, corners2){
   sorted_indices = sort_indices(vertices, mask)
   #browser()
   # if(as.array(sorted_indices$min()$to(device="cpu")) == 0){browser()}
+  # browser()
   sorted_indices = sorted_indices + 1L # WORK AROUND
   Output <- calculate_area(sorted_indices, vertices)
 

@@ -18,7 +18,7 @@ create_data <- function(num){
     corners[i,,] = box2corners(x[i], y[i], w[i], h[i], alpha[i])
   }
   label = cbind(x, y , w, h, alpha)
-  
+  #browser()
   return(list(corners, label))
 }
 
@@ -41,8 +41,8 @@ save_dataset <- function(DATA_DIR, NUM_TRAIN, NUM_TEST){
   print(paste("data saved in: ", DATA_DIR))
 }
 
-Data <- save_dataset(DATA_DIR, NUM_TRAIN, NUM_TEST)
-
+#Data <- save_dataset(DATA_DIR, NUM_TRAIN, NUM_TEST)
+#browser()
 #################################################################################################################################
 # Demo
 create_network <- function(){
@@ -66,17 +66,17 @@ BoxDataSet <- dataset(
   name = "TREES_DS_FUN",
   initialize = function(split = "train") {
     self$split =split
-    #browser()
-    self$data = torch_tensor(as.matrix(read.csv(paste(DATA_DIR, "/", split, "_data.csv", sep=""))))
-    self$data <- self$data$view(c(dim(self$data)[1],2,4)) %>%  torch_transpose(2, 3)
-    
-    self$label = torch_tensor(as.matrix(read.csv(paste(DATA_DIR, "/", split, "_label.csv", sep=""))))
+    self$data =  torch_tensor(np$load(paste(DATA_DIR, "/", split, "_data.npy", sep="")), dtype = torch_float())$to(device =  device) # torch_tensor(as.matrix(read.csv(paste(DATA_DIR, "/", split, "_data.npy", sep=""))))
+    # self$data <- self$data$view(c(dim(self$data)[1],2,4)) %>%  torch_transpose(2, 3)
+    #self$label = torch_tensor(as.matrix(read.csv(paste(DATA_DIR, "/", split, "_label.csv", sep=""))))
+    self$label =  torch_tensor(np$load(paste(DATA_DIR, "/", split, "_label.npy", sep="")), dtype = torch_float())$to(device =  device)
   },
   .length = function() {
+    # browser()
     self$data$size(1)
   },
   .getitem = function(index) {
-    # browser()
+    # 
     d = self$data[index,,]
     l = self$label[index,]
     
