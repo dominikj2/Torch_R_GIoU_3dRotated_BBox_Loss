@@ -16,3 +16,4 @@ box2corners <- function(x, y, w, h, alpha){  # WORKING
   return(rotated)
 }
 # Test <- box2corners(box1[1], box1[2], box1[3], box1[4], box1[5])
+

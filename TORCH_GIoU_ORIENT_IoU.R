@@ -1,7 +1,8 @@
 
 #################################################################################################################################
 # oriented_iou_loss.py  
-enclosing_box <- function(corners1, corners2, enclosing_type ="smallest"){
+enclosing_box <- function(corners1, corners2, enclosing_type ="smallest"){ 
+  # browser()
   if(enclosing_type == "aligned"){
     return(enclosing_box_aligned(corners1, corners2))
   }
@@ -10,6 +11,7 @@ enclosing_box <- function(corners1, corners2, enclosing_type ="smallest"){
     return (enclosing_box_pca(corners1, corners2))
   }
   if(enclosing_type == "smallest")
+    # browser()
     return (smallest_bounding_box(torch_cat(list(corners1, corners2), dim=-2)))
 }
 
@@ -164,8 +166,8 @@ cal_giou <- function(box1, box2, enclosing_type){
   iou <- cal_iou_out[[1]]
   corners1 <- cal_iou_out[[2]] 
   corners2 <- cal_iou_out[[3]] 
-  u <- cal_iou_out[[4]]
-  enclosing_box_out = enclosing_box(corners1, corners2, enclosing_type= "smallest")
+  u <- cal_iou_out[[4]] 
+  enclosing_box_out = enclosing_box(corners1, corners2, enclosing_type) # = "smallest"
   w <-  enclosing_box_out[[1]]
   h <-  enclosing_box_out[[2]]
   
@@ -178,103 +180,114 @@ cal_giou <- function(box1, box2, enclosing_type){
 }
 
 # #################################################################################################################################
-# # oriented_iou_loss.py 
-# cal_diou_3d <- function(box3d1, box3d2, enclosing_type="smallest"){
-#   # """calculated 3d DIoU loss. assume the 3d bounding boxes are only rotated around z axis
-#   # 
-#   #   Args:
-#   #       box3d1 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
-#   #       box3d2 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
-#   #       enclosing_type (str, optional): type of enclosing box. Defaults to "smallest".
-#   # 
-#   #   Returns:
-#   #       (torch.Tensor): (B, N) 3d DIoU loss
-#   #       (torch.Tensor): (B, N) 3d IoU
-#   #   """
-#   cal_iou_3d_out <- cal_iou_3d(box3d1, box3d2, verbose=True)
-#   iou3d <- cal_iou_3d_out[[1]]
-#   corners1 <- cal_iou_3d_out[[2]]
-#   corners2 <- cal_iou_3d_out[[3]]
-#   z_range <- cal_iou_3d_out[[4]]
-#   u3d <- cal_iou_3d_out[[5]]
-#   
-#   enclosing_box_out <- enclosing_box(corners1, corners2, enclosing_type)
-#   w <- enclosing_box_out[[1]]
-#   h <- enclosing_box_out[[1]]
-#   x_offset = box3d1[..,1] - box3d2[.., 1]
-#   y_offset = box3d1[..,2] - box3d2[.., 2]
-#   z_offset = box3d1[..,3] - box3d2[.., 3]
-#   d2 = x_offset*x_offset + y_offset*y_offset + z_offset*z_offset
-#   c2 = w*w + h*h + z_range*z_range
-#   diou = 1. - iou3d + d2/c2
-#   return(list(diou, iou3d))
-# }
-#  
-# 
-# #################################################################################################################################
-# # oriented_iou_loss.py 
-# cal_iou_3d <- function(box3d1, box3d2, verbose=TRUE){
-#   # """calculated 3d iou. assume the 3d bounding boxes are only rotated around z axis
-#   # 
-#   #   Args:
-#   #       box3d1 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
-#   #       box3d2 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
-#   #   """
-#   box1 = box3d1[.., c(1,2,4,5,7)]$to(device=device)    # 2d box
-#   box2 = box3d2[.., c(1,2,4,5,7)]$to(device=device)  
-#   zmax1 = box3d1[.., 3] + box3d1[.., 6] * 0.5
-#   zmin1 = box3d1[.., 3] - box3d1[.., 6] * 0.5
-#   zmax2 = box3d2[.., 3] + box3d2[.., 6] * 0.5
-#   zmin2 = box3d2[.., 3] - box3d2[.., 6] * 0.5
-#   z_overlap = (torch_min(zmax1, zmax2) - torch_max(zmin1, zmin2))$clamp_min(0.)
-#   cal_iou_Out <- cal_iou(box1, box2)        # (B, N)
-#   iou_2d <- cal_iou_Out[[1]] 
-#   corners1 <- cal_iou_Out[[2]] 
-#   corners2 <- cal_iou_Out[[3]] 
-#   browser()
-#   u <- cal_iou_Out[[4]] 
-#   intersection_3d = iou_2d * u * z_overlap
-#   v1 = box3d1[.., 4] * box3d1[.., 5] * box3d1[.., 6]
-#   v2 = box3d2[.., 4] * box3d2[.., 5] * box3d2[.., 6]
-#   u3d = v1 + v2 - intersection_3d
-#   if(verbose == TRUE){
-#     z_range = (torch_max(zmax1, zmax2) - torch_min(zmin1, zmin2))$clamp_min(0.)
-#     return (list(intersection_3d / u3d, corners1, corners2, z_range, u3d))
-#   }else{
-#     return (intersection_3d / u3d)
-#   }
-#     
-# }
-# 
-# #################################################################################################################################
-# # oriented_iou_loss.py 
-# cal_giou_3d <- function(box3d1, box3d2, enclosing_type="smallest")
-#   {
-#   #  """calculated 3d GIoU loss. assume the 3d bounding boxes are only rotated around z axis
-#   # 
-#   #   Args:
-#   #       box3d1 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
-#   #       box3d2 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
-#   #       enclosing_type (str, optional): type of enclosing box. Defaults to "smallest".
-#   # 
-#   #   Returns:
-#   #       (torch.Tensor): (B, N) 3d GIoU loss
-#   #       (torch.Tensor): (B, N) 3d IoU
-#   # """
-# 
-#   cal_iou_3d_Out <- cal_iou_3d(box3d1, box3d2, verbose=True)
-#   iou3d <- cal_iou_3d_Out[[1]]
-#   corners1 <- cal_iou_3d_Out[[2]] 
-#   corners2 <- cal_iou_3d_Out[[3]]
-#   z_range <- cal_iou_3d_Out[[4]]
-#   u3d <- cal_iou_3d_Out[[5]]
-#     
-# 
-#   enclosing_box_out <- enclosing_box(corners1, corners2, enclosing_type)
-#   w <- enclosing_box_out[[1]]
-#   h <- enclosing_box_out[[2]]
-#   v_c = z_range * w * h
-#   giou_loss = 1. - iou3d + (v_c - u3d)/v_c
-#   return (list(giou_loss, iou3d))
-# }
+# oriented_iou_loss.py
+cal_diou_3d <- function(box3d1, box3d2, enclosing_type){
+  # """calculated 3d DIoU loss. assume the 3d bounding boxes are only rotated around z axis
+  #
+  #   Args:
+  #       box3d1 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
+  #       box3d2 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
+  #       enclosing_type (str, optional): type of enclosing box. Defaults to "smallest".
+  #
+  #   Returns:
+  #       (torch.Tensor): (B, N) 3d DIoU loss
+  #       (torch.Tensor): (B, N) 3d IoU
+  #   """
+  cal_iou_3d_out <- cal_iou_3d(box3d1, box3d2, verbose=TRUE)
+  iou3d <- cal_iou_3d_out[[1]]
+  corners1 <- cal_iou_3d_out[[2]]
+  corners2 <- cal_iou_3d_out[[3]]
+  z_range <- cal_iou_3d_out[[4]]
+  u3d <- cal_iou_3d_out[[5]]
+  browser()
+  enclosing_box_out <- enclosing_box(corners1, corners2, enclosing_type)
+  w <- enclosing_box_out[[1]]
+  h <- enclosing_box_out[[1]]
+  x_offset = box3d1[..,1] - box3d2[.., 1]
+  y_offset = box3d1[..,2] - box3d2[.., 2]
+  z_offset = box3d1[..,3] - box3d2[.., 3]
+  d2 = x_offset*x_offset + y_offset*y_offset + z_offset*z_offset
+  c2 = w*w + h*h + z_range*z_range
+  diou = 1. - iou3d + d2/c2
+  return(list(diou, iou3d))
+}
 
+
+#################################################################################################################################
+# oriented_iou_loss.py
+cal_iou_3d <- function(box3d1, box3d2, verbose=TRUE){
+  # """calculated 3d iou. assume the 3d bounding boxes are only rotated around z axis
+  #
+  #   Args:
+  #       box3d1 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
+  #       box3d2 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
+  #   """
+  
+  box1 = box3d1[.., c(1,2,4,5,7)]$to(device=device)    # 2d box  x,y,w,h, alpha
+  box2 = box3d2[.., c(1,2,4,5,7)]$to(device=device)    # 2d box  x,y,w,h, alpha
+  
+  # OVERLAP IN THE Z DIRECTION
+  zmax1 = box3d1[.., 3] + box3d1[.., 6] * 0.5
+  zmin1 = box3d1[.., 3] - box3d1[.., 6] * 0.5
+  zmax2 = box3d2[.., 3] + box3d2[.., 6] * 0.5
+  zmin2 = box3d2[.., 3] - box3d2[.., 6] * 0.5
+  z_overlap = (torch_min(zmax1, other=zmax2) - torch_max(zmin1, other=zmin2))$clamp_min(0.)
+  
+  
+  cal_iou_Out <- cal_iou(box1, box2)        # (B, N)
+  iou_2d <- cal_iou_Out[[1]]
+  corners1 <- cal_iou_Out[[2]]
+  corners2 <- cal_iou_Out[[3]]
+  u <- cal_iou_Out[[4]]
+  intersection_3d = iou_2d * u * z_overlap
+  v1 = box3d1[.., 4] * box3d1[.., 5] * box3d1[.., 6] # w,h,l
+  v2 = box3d2[.., 4] * box3d2[.., 5] * box3d2[.., 6] #  w,h,l
+  u3d = v1 + v2 - intersection_3d
+  if(verbose == TRUE){
+    z_range = (torch_max(zmax1, other=zmax2) - torch_min(zmin1, other=zmin2))$clamp_min(0.)
+    return (list(intersection_3d/u3d, corners1, corners2, z_range, u3d))
+  }else{
+    return (intersection_3d / u3d)
+  }
+
+}
+
+#################################################################################################################################
+# oriented_iou_loss.py
+cal_giou_3d <- function(box3d1, box3d2, enclosing_type)
+  {
+  #  """calculated 3d GIoU loss. assume the 3d bounding boxes are only rotated around z axis
+  #
+  #   Args:
+  #       box3d1 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
+  #       box3d2 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
+  #       enclosing_type (str, optional): type of enclosing box. Defaults to "smallest".
+  #
+  #   Returns:
+  #       (torch.Tensor): (B, N) 3d GIoU loss
+  #       (torch.Tensor): (B, N) 3d IoU
+  # """
+  # browser()
+  cal_iou_3d_Out <- cal_iou_3d(box3d1, box3d2, verbose=TRUE) # cal_iou for 2d
+  iou3d <- cal_iou_3d_Out[[1]]
+  corners1 <- cal_iou_3d_Out[[2]]
+  corners2 <- cal_iou_3d_Out[[3]]
+  z_range <- cal_iou_3d_Out[[4]]
+  u3d <- cal_iou_3d_Out[[5]]
+
+
+  enclosing_box_out <- enclosing_box(corners1, corners2, enclosing_type)
+  w <- enclosing_box_out[[1]]
+  h <- enclosing_box_out[[2]]
+  v_c = z_range * w * h
+  giou_loss = 1. - iou3d + (v_c - u3d)/v_c
+  return (list(giou_loss, iou3d))
+}
+
+# box3d1 = array(c(0,0,0,3,3,3,0))
+# box3d2 = array(c(1,1,1,2,2,2,pi/3))
+# tensor1 = torch_tensor(box3d1, device=device, dtype= torch_float())$unsqueeze(1)$unsqueeze(1)
+# tensor2 = torch_tensor(box3d2, device=device, dtype= torch_float())$unsqueeze(1)$unsqueeze(1)
+# cal_giou_3d_Output <- cal_giou_3d(tensor1, tensor1)
+# giou_loss = cal_giou_3d_Output[[1]]
+# iou = cal_giou_3d_Output[[2]]
