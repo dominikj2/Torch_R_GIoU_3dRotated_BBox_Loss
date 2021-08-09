@@ -180,37 +180,37 @@ cal_giou <- function(box1, box2, enclosing_type){
 }
 
 # #################################################################################################################################
-# oriented_iou_loss.py
-cal_diou_3d <- function(box3d1, box3d2, enclosing_type){
-  # """calculated 3d DIoU loss. assume the 3d bounding boxes are only rotated around z axis
-  #
-  #   Args:
-  #       box3d1 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
-  #       box3d2 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
-  #       enclosing_type (str, optional): type of enclosing box. Defaults to "smallest".
-  #
-  #   Returns:
-  #       (torch.Tensor): (B, N) 3d DIoU loss
-  #       (torch.Tensor): (B, N) 3d IoU
-  #   """
-  cal_iou_3d_out <- cal_iou_3d(box3d1, box3d2, verbose=TRUE)
-  iou3d <- cal_iou_3d_out[[1]]
-  corners1 <- cal_iou_3d_out[[2]]
-  corners2 <- cal_iou_3d_out[[3]]
-  z_range <- cal_iou_3d_out[[4]]
-  u3d <- cal_iou_3d_out[[5]]
-  browser()
-  enclosing_box_out <- enclosing_box(corners1, corners2, enclosing_type)
-  w <- enclosing_box_out[[1]]
-  h <- enclosing_box_out[[1]]
-  x_offset = box3d1[..,1] - box3d2[.., 1]
-  y_offset = box3d1[..,2] - box3d2[.., 2]
-  z_offset = box3d1[..,3] - box3d2[.., 3]
-  d2 = x_offset*x_offset + y_offset*y_offset + z_offset*z_offset
-  c2 = w*w + h*h + z_range*z_range
-  diou = 1. - iou3d + d2/c2
-  return(list(diou, iou3d))
-}
+# # oriented_iou_loss.py
+# cal_diou_3d <- function(box3d1, box3d2, enclosing_type){
+#   # """calculated 3d DIoU loss. assume the 3d bounding boxes are only rotated around z axis
+#   #
+#   #   Args:
+#   #       box3d1 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
+#   #       box3d2 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
+#   #       enclosing_type (str, optional): type of enclosing box. Defaults to "smallest".
+#   #
+#   #   Returns:
+#   #       (torch.Tensor): (B, N) 3d DIoU loss
+#   #       (torch.Tensor): (B, N) 3d IoU
+#   #   """
+#   cal_iou_3d_out <- cal_iou_3d(box3d1, box3d2, verbose=TRUE)
+#   iou3d <- cal_iou_3d_out[[1]]
+#   corners1 <- cal_iou_3d_out[[2]]
+#   corners2 <- cal_iou_3d_out[[3]]
+#   z_range <- cal_iou_3d_out[[4]]
+#   u3d <- cal_iou_3d_out[[5]]
+#   browser()
+#   enclosing_box_out <- enclosing_box(corners1, corners2, enclosing_type)
+#   w <- enclosing_box_out[[1]]
+#   h <- enclosing_box_out[[1]]
+#   x_offset = box3d1[..,1] - box3d2[.., 1]
+#   y_offset = box3d1[..,2] - box3d2[.., 2]
+#   z_offset = box3d1[..,3] - box3d2[.., 3]
+#   d2 = x_offset*x_offset + y_offset*y_offset + z_offset*z_offset
+#   c2 = w*w + h*h + z_range*z_range
+#   diou = 1. - iou3d + d2/c2
+#   return(list(diou, iou3d))
+# }
 
 
 #################################################################################################################################
@@ -222,17 +222,20 @@ cal_iou_3d <- function(box3d1, box3d2, verbose=TRUE){
   #       box3d1 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
   #       box3d2 (torch.Tensor): (B, N, 3+3+1),  (x,y,z,w,h,l,alpha)
   #   """
-  
+  # browser()
   box1 = box3d1[.., c(1,2,4,5,7)]$to(device=device)    # 2d box  x,y,w,h, alpha
   box2 = box3d2[.., c(1,2,4,5,7)]$to(device=device)    # 2d box  x,y,w,h, alpha
   
   # OVERLAP IN THE Z DIRECTION
-  zmax1 = box3d1[.., 3] + box3d1[.., 6] * 0.5
-  zmin1 = box3d1[.., 3] - box3d1[.., 6] * 0.5
-  zmax2 = box3d2[.., 3] + box3d2[.., 6] * 0.5
+  zmin1 = box3d1[.., 3]  - box3d1[.., 6] * 0.5
+  zmax1 = box3d1[.., 3] + box3d1[.., 6]  * 0.5
+  
   zmin2 = box3d2[.., 3] - box3d2[.., 6] * 0.5
+  zmax2 = box3d2[.., 3] + box3d2[.., 6] * 0.5
+ 
   z_overlap = (torch_min(zmax1, other=zmax2) - torch_max(zmin1, other=zmin2))$clamp_min(0.)
   
+  # print(paste("Z_overlap", as.array(z_overlap$to(device="cpu"))))
   
   cal_iou_Out <- cal_iou(box1, box2)        # (B, N)
   iou_2d <- cal_iou_Out[[1]]

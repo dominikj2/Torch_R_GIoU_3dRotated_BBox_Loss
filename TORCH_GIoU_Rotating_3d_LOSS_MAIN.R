@@ -48,7 +48,7 @@ BATCH_SIZE = 8 # 32
 N_DATA = 32 # 128
 NUM_TRAIN = 20 * BATCH_SIZE * N_DATA # 200 * BATCH_SIZE * N_DATA
 NUM_TEST = 2 * BATCH_SIZE * N_DATA # 20 * BATCH_SIZE * N_DATA
-NUM_EPOCH = 20
+NUM_EPOCH = 100
 EPSILON = 1e-8
 
 #################################################################################################################################
@@ -109,15 +109,20 @@ Main <- function(Loss_Type = "giou_3d", enclosing_type){ #
       #data <- train_batch(i) # ??
       # print("enumerate loop")
       # browser()
+      
+      # DO YOU HAVE TO ADD THE Z VALUE TO EACH (OR NO???)
       box <- b[[1]]$to(device=device)
-      box <- box$view(c(BATCH_SIZE, -1, 4*2)) %>% torch_transpose(2, 3)  # 4  8 16  (B, 8, N)
+      
+     # browser()
+      box <- box$view(c(BATCH_SIZE, -1, 8*3)) %>% torch_transpose(2, 3)  # 4  8 16  (B, 8, N)
       
       label <- b[[2]]$to(device=device)
       label <- label$view(c(BATCH_SIZE, -1, 7)) #%>% torch_transpose(2, 3)   # 3d CHANGES CHANGED 5 to 7
       
       # browser()                                                           # 4 16  5
       optimizer$zero_grad()
-      pred = net(box)  %>% torch_transpose(2, 3)                             # (B, N, 5)
+      #browser()
+      pred = net(box)  %>% torch_transpose(2, 3)                             # (B, N, 7)
       
       # FOR DEBUGGING OPEN THE PYTHON PREDICTIONS
       # pred = torch_tensor(np$load(paste(DATA_DIR, "/",  "Pred_data.npy", sep="")), dtype = torch_float())$to(device =  device)
@@ -127,7 +132,7 @@ Main <- function(Loss_Type = "giou_3d", enclosing_type){ #
       iou <- NA
       
       if(Loss_Type == "giou_3d"){
-       # browser()  
+        # browser()  
         Output_IoU = cal_giou_3d(pred, label, enclosing_type)
         iou_loss <- Output_IoU[[1]] 
         iou <- Output_IoU[[2]]
@@ -191,7 +196,7 @@ Main <- function(Loss_Type = "giou_3d", enclosing_type){ #
         #data <- train_batch(i) # ??
         #browser()
         box <- b[[1]]$to(device=device)
-        box <- box$view(c(BATCH_SIZE, -1, 4*2)) %>% torch_transpose(2, 3) 
+        box <- box$view(c(BATCH_SIZE, -1, 8*3)) %>% torch_transpose(2, 3) 
         
         label <- b[[2]]$to(device=device)
         label <- label$view(c(BATCH_SIZE, -1, 7)) # %>% torch_transpose(2, 3) 

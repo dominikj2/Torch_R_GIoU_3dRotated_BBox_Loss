@@ -7,18 +7,19 @@
 #################################################################################################################################
 # Demo
 create_data <- function(num){
-  x = (rnorm(num) - 0.5) * 2 * X_MAX # np.random.rand(num)    (x,y,z,w,h,l,alpha)
-  y = (rnorm(num) - 0.5) * 2 * Y_MAX
-  z = (rnorm(num) - 0.5) * 2 * Z_MAX
-  w = (rnorm(num) - 0.5) * 2 * SCALE + 1
-  h = (rnorm(num) - 0.5) * 2 * SCALE + 1
-  l = (rnorm(num) - 0.5) * 2 * SCALE + 1
+  x = (runif(num) - 0.5) * 2 * X_MAX # np.random.rand(num)    (x,y,z,w,h,l,alpha)
+  y = (runif(num) - 0.5) * 2 * Y_MAX
+  z = (runif(num) - 0.5) * 2 * Z_MAX
+  w = (runif(num) - 0.5) * 2 * SCALE + 1
+  h = (runif(num) - 0.5) * 2 * SCALE + 1
+  l = (runif(num) - 0.5) * 2 * SCALE + 1
   alpha = rnorm(num) * pi
-  corners =  array(0.0, dim=c(num,4,2)) #         # np.zeros((num, 4, 2)).astype(np.float)
+  corners =  array(0.0, dim=c(num,8,3)) #         # np.zeros((num, 4, 2)).astype(np.float)
 
   for (i in 1:dim(corners)[1]){
-    corners[i,,] = box2corners(x[i], y[i], w[i], h[i], alpha[i])
-    #browser()
+    # browser()
+    corners[i,,] = box2corners_3d(x[i], y[i], z[i], w[i], h[i], l[i], alpha[i])
+    
   }
   label = cbind(x, y , z,  w, h, l, alpha)
   # browser()
@@ -54,8 +55,8 @@ Data <- save_dataset(DATA_DIR, NUM_TRAIN, NUM_TEST)
 #################################################################################################################################
 # Demo
 create_network <- function(){
- 
-  nn_sequential(nn_conv1d(8, 128, 1, bias=FALSE), 
+  
+  nn_sequential(nn_conv1d(24, 128, 1, bias=FALSE), 
                 nn_batch_norm1d(128), 
                 nn_relu (TRUE), # nn.ReLU
                 nn_conv1d(128, 512, 1, bias=FALSE), 
