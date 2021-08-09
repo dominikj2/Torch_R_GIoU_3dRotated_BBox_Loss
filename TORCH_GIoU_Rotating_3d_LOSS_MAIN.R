@@ -48,7 +48,7 @@ BATCH_SIZE = 8 # 32
 N_DATA = 32 # 128
 NUM_TRAIN = 20 * BATCH_SIZE * N_DATA # 200 * BATCH_SIZE * N_DATA
 NUM_TEST = 2 * BATCH_SIZE * N_DATA # 20 * BATCH_SIZE * N_DATA
-NUM_EPOCH = 100
+NUM_EPOCH = 200
 EPSILON = 1e-8
 
 #################################################################################################################################
@@ -121,7 +121,7 @@ Main <- function(Loss_Type = "giou_3d", enclosing_type){ #
       
       # browser()                                                           # 4 16  5
       optimizer$zero_grad()
-      #browser()
+      # browser()
       pred = net(box)  %>% torch_transpose(2, 3)                             # (B, N, 7)
       
       # FOR DEBUGGING OPEN THE PYTHON PREDICTIONS

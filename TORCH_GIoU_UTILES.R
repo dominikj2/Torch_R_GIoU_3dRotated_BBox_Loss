@@ -27,7 +27,7 @@ box2corners_3d <- function(x, y, z, w, h, l, alpha){  # WORKING
   cos = cos(alpha)
   R = matrix(c(cos, -sin, sin, cos), nrow=2, ncol=2)
   rotated = corners %*% R
-  # browser()
+  #browser()
   # browser()
   rotated[, 1] <- rotated[, 1] + x
   rotated[, 2] <- rotated[, 2] + y

@@ -17,7 +17,7 @@ create_data <- function(num){
   corners =  array(0.0, dim=c(num,8,3)) #         # np.zeros((num, 4, 2)).astype(np.float)
 
   for (i in 1:dim(corners)[1]){
-    # browser()
+    #browser()
     corners[i,,] = box2corners_3d(x[i], y[i], z[i], w[i], h[i], l[i], alpha[i])
     
   }
@@ -55,7 +55,7 @@ Data <- save_dataset(DATA_DIR, NUM_TRAIN, NUM_TEST)
 #################################################################################################################################
 # Demo
 create_network <- function(){
-  
+ 
   nn_sequential(nn_conv1d(24, 128, 1, bias=FALSE), 
                 nn_batch_norm1d(128), 
                 nn_relu (TRUE), # nn.ReLU
