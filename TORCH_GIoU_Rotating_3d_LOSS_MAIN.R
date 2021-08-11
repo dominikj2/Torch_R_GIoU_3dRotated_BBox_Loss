@@ -48,7 +48,7 @@ BATCH_SIZE = 8 # 32
 N_DATA = 32 # 128
 NUM_TRAIN = 20 * BATCH_SIZE * N_DATA # 200 * BATCH_SIZE * N_DATA
 NUM_TEST = 2 * BATCH_SIZE * N_DATA # 20 * BATCH_SIZE * N_DATA
-NUM_EPOCH = 200
+NUM_EPOCH = 1000
 EPSILON = 1e-8
 
 #################################################################################################################################
@@ -82,7 +82,7 @@ source(paste(SOURCE_DIR, "/TORCH_GIoU_UTILES.R", sep=""))
 
 source(paste(SOURCE_DIR, "/TORCH_GIoU_DEMO.R", sep=""))
 #################################################################################################################################
-Main <- function(Loss_Type = "giou_3d", enclosing_type){ # 
+Main <- function(Loss_Type = "Complete_iou_3d", enclosing_type){ # 
   # browser()
   ds_train = BoxDataSet("train")
   ds_test = BoxDataSet("test")
@@ -131,28 +131,20 @@ Main <- function(Loss_Type = "giou_3d", enclosing_type){ #
       iou_loss <- NA
       iou <- NA
       
-      if(Loss_Type == "giou_3d"){
-        # browser()  
-        Output_IoU = cal_giou_3d(pred, label, enclosing_type)
-        iou_loss <- Output_IoU[[1]] 
-        iou <- Output_IoU[[2]]
-      }
-      
-      # if(Loss_Type == "giou"){
-      #   #browser()
-      #   Output_IoU = cal_giou(pred, label, enclosing_type)
+      # if(Loss_Type == "giou_3d"){
+      #   # browser()  
+      #   Output_IoU = cal_giou_3d(pred, label, enclosing_type)
       #   iou_loss <- Output_IoU[[1]] 
       #   iou <- Output_IoU[[2]]
       # }
 
-      #print(paste("Count_Corro", Count_Corro))
-
-      # if(Loss_Type == "diou"){
-      #    Output_IoU = cal_diou(pred, label, enclosing_type)
-      #    iou_loss <- Output_IoU[[1]] 
-      #    iou <- Output_IoU[[2]]
-      # }
-
+      if(Loss_Type == "Complete_iou_3d"){
+        #browser()
+        Output_IoU = cal_complete_iou_3d(pred, label, enclosing_type)
+        iou_loss <- Output_IoU[[1]] 
+        iou <- Output_IoU[[2]]
+      }
+      
       iou_loss <- torch_mean(iou_loss)  #iou_loss = torch.mean(iou_loss)
 
       end_time <- proc.time()
@@ -165,13 +157,12 @@ Main <- function(Loss_Type = "giou_3d", enclosing_type){ #
       end_time <- proc.time()
       Backward_Time_Taken <- round((end_time - start_time)[[3]],2)
 
-      
-      #iou_loss$backward()
       optimizer$step()
       
       
-      if (epoch%%1 == 0){
-       
+      if (epoch%%10 == 0){
+        
+        # pred  box
         iou_mask = (iou > 0)$to(dtype = torch_float())
         mean_iou = torch_sum(iou) / (torch_sum(iou_mask) + 1e-8)
         cat(sprintf("\nEpoch %d, Cnt:%d, Batch:%d, loss:%3f,  mean_iou: %4f, Fwd_Time: %4f, Back_Time: %4f",
@@ -180,11 +171,15 @@ Main <- function(Loss_Type = "giou_3d", enclosing_type){ #
                     round(as.array(mean_iou$to(device = "cpu")),3),
                     Forward_Time_Taken,
                     Backward_Time_Taken))
+        
+        # browser()
+        # pred_V <- pred$view(c(-1, 7))
+        # Plot Results to See
+        
         }
       })
     
     lr_scheduler$step()
-    
 
     # validate
     net$eval()
@@ -209,24 +204,20 @@ Main <- function(Loss_Type = "giou_3d", enclosing_type){ #
         iou_loss <- NA
         iou <- NA
         
-        if(Loss_Type == "giou_3d"){
+        # if(Loss_Type == "giou_3d"){
+        #   #browser()
+        #   Output_IoU = cal_giou_3d(pred, label, enclosing_type)
+        #   iou_loss <- Output_IoU[[1]] 
+        #   iou <- Output_IoU[[2]]
+        # }
+        
+        if(Loss_Type == "Complete_iou_3d"){
           #browser()
-          Output_IoU = cal_giou_3d(pred, label, enclosing_type)
+          Output_IoU = cal_complete_iou_3d(pred, label, enclosing_type)
           iou_loss <- Output_IoU[[1]] 
           iou <- Output_IoU[[2]]
         }
         
-        # if(Loss_Type == "giou"){
-        #   Output_IoU = cal_giou(pred, label, enclosing_type)
-        #   iou_loss <- Output_IoU[[1]] 
-        #   iou <- Output_IoU[[2]]
-        # }
-        # 
-        # if(Loss_Type == "diou"){
-        #   Output_IoU = cal_diou(pred, label, enclosing_type)
-        #   iou_loss <- Output_IoU[[1]] 
-        #   iou <- Output_IoU[[2]]
-        # }
         iou_loss <- torch_mean(iou_loss)
         Valid_loss <- c(Valid_loss, as.array(iou_loss$cpu()))
         
@@ -241,6 +232,9 @@ Main <- function(Loss_Type = "giou_3d", enclosing_type){ #
     n_iter = (length(ds_test)/BATCH_SIZE)/N_DATA
     cat(sprintf("  average loss: %.4f" , (aver_loss/n_iter)))
     cat(sprintf("  average iou: %.4f" , (aver_mean_iou/n_iter)))
+    
+    Output_Valid <- c(Output_Valid, (aver_loss/n_iter))
+    plot(1:epoch, Output_Valid)
     print("..............................")
   }
 }
@@ -251,18 +245,10 @@ LINES <- generate_table_out[[1]]
 POINTS <- generate_table_out[[2]]
 # browser()
 # RUN THE IoU ML
-Main(Loss_Type ="giou_3d", enclosing_type="smallest") # aligned
+Output_Valid <- c()
+Main(Loss_Type ="Complete_iou_3d", enclosing_type="smallest") # aligned
 
 
-
-#     
-# # if __name__ == "__main__":
-# #     parser = argparse.ArgumentParser()
-# #     parser.add_argument("--loss", type=str, default="diou", help="type of loss function. support: diou or giou. [default: diou]")
-# #     parser.add_argument("--enclosing", type=str, default="smallest", 
-# #         help="type of enclosing box. support: aligned (axis-aligned) or pca (rotated) or smallest (rotated). [default: smallest]")
-# #     flags = parser.parse_args()
-# #     main(flags.loss, flags.enclosing)
 
 
 
